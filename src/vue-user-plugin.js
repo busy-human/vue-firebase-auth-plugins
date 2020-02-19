@@ -94,7 +94,10 @@ export const VueUserPlugin = {
                     this.user = user;
                     this.runUserLoadedCallbacks();
                 }
-            }           
+            } else {
+                this.user = null;
+                this.runUserLoadedCallbacks();
+            }      
         });    
 
         Vue.mixin({
