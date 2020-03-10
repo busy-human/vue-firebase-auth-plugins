@@ -83,3 +83,9 @@ Usage
             console.log("UID:", this.user.uid);
         }
     }
+
+## postAuthPath
+
+You can set the postAuthPath to a string, or you can use a function that resolves to the path, in case it needs to be dynamically resolved. The function will be called with the router as the first argument and the resolved user as the second.
+
+It supports asynchronous functions in case you need to a do a lookup or fetch some additional data first.

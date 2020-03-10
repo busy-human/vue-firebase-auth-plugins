@@ -36,6 +36,14 @@ AuthGuard.install = function(Vue, {router, auth, options = {}}) {
         console.warn('You must pass in postAuthPath with the AuthGuard.install options');
     }
 
+    function resolvePostAuthPath() {
+        if(typeof AuthGuard.config.postAuthPath === "function") {
+            return Promise.resolve(AuthGuard.config.postAuthPath(router, router.user));
+        } else {
+            return AuthGuard.config.postAuthPath;
+        }        
+    }
+
     /**
      * Listen for changes to the user. The first event on this represents a successful session check
      */
@@ -47,7 +55,10 @@ AuthGuard.install = function(Vue, {router, auth, options = {}}) {
             router.resumeRouting();
         } else if(user && router.isPublicRoute( router.currentRoute.path)) {
             // The user just logged in / signed up
-            router.push(AuthGuard.config.postAuthPath);
+            resolvePostAuthPath()
+                .then(path => {
+                    router.push(path);
+                })
         } else if(!user) {
             // The user just logged out / signed out
             router.push(AuthGuard.config.publicLanding);
@@ -113,7 +124,14 @@ AuthGuard.install = function(Vue, {router, auth, options = {}}) {
             console.log("Resuming attempted routing");
             var rt = router.deferredRouting;
             router.deferredRouting = null;
-            router.resolvePath(rt.to, rt.from, rt.next);
+            if(router.isLoginPage(rt.to)) {
+                resolvePostAuthPath()
+                    .then(path => {
+                        router.push(path);
+                    });
+            } else {
+                router.resolvePath(rt.to, rt.from, rt.next);
+            }
         } else if(auth.currentUser) {
             console.log("Router: User logged in");
             router.push(AuthGuard.config.postAuthPath);
