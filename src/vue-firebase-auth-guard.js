@@ -124,7 +124,7 @@ AuthGuard.install = function(Vue, {router, auth, options = {}}) {
             console.log("Resuming attempted routing");
             var rt = router.deferredRouting;
             router.deferredRouting = null;
-            if(router.isLoginPage(rt.to)) {
+            if(router.user && router.isLoginPage(rt.to)) {
                 resolvePostAuthPath()
                     .then(path => {
                         router.push(path);
