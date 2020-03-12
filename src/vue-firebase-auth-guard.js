@@ -40,7 +40,7 @@ AuthGuard.install = function(Vue, {router, auth, options = {}}) {
         if(typeof AuthGuard.config.postAuthPath === "function") {
             return Promise.resolve(AuthGuard.config.postAuthPath(router, router.user));
         } else {
-            return AuthGuard.config.postAuthPath;
+            return Promise.resolve(AuthGuard.config.postAuthPath);
         }        
     }
 
