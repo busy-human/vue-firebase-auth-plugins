@@ -1,9 +1,10 @@
 import Promise from "bluebird";
 
-const MAX_TRANSFORM_WAIT = 1000 * 6;
+const MAX_TRANSFORM_WAIT = 1000 * 10;
 const UserTransformFailsafe = {
     timeout: null,
     pendingPromise: null,
+    time: MAX_TRANSFORM_WAIT,
     newUnresolvedError() {
         return new Error("User Transformation Timed Out. The User Transform promise passed to VueUserPlugin did not resolve or rejected")
     },
@@ -12,7 +13,7 @@ const UserTransformFailsafe = {
         return new Promise((resolve, reject) => {
             this.timeout = setTimeout(() => {
                 reject(this.newUnresolvedError());
-            }, MAX_TRANSFORM_WAIT);
+            }, UserTransformFailsafe.time);
         });
     },
     start(transformPromise) {
@@ -78,9 +79,9 @@ export const VueUserPlugin = {
      * @param {*} Vue 
      * @param {*} options - auth, transformer; where the transformer function transforms Firebase's user object 
      */
-    install: function(Vue, {auth, transformer}) {
+    install: function(Vue, {auth, transformer, timeout}) {
         var plugin = this;
-
+        UserTransformFailsafe.time = timeout || MAX_TRANSFORM_WAIT;
 
         auth.onAuthStateChanged((user) => {
             if(user) {
