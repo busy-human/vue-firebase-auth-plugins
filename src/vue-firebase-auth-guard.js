@@ -75,7 +75,7 @@ AuthGuard.install = function(Vue, {router, auth, options = {}}) {
             isPublic = true;
         } else if(resolvedRoute) {
             let requiresAuth = resolvedRoute.route.meta ? resolvedRoute.route.meta.requiresAuth : undefined;
-            isPublic = requiresAuth === undefined ? isPublic : requiresAuth;
+            isPublic = requiresAuth === undefined ? isPublic : !requiresAuth;
         }
 
         return isPublic;
