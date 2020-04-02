@@ -96,8 +96,9 @@ export const VueUserPlugin = {
                     this.runUserLoadedCallbacks();
                 }
             } else {
-                this.user = null;
-                this.runUserLoadedCallbacks();
+                console.warn("No user. TODO: Add another callback for checkedForUser");
+                // this.user = null;
+                // this.runUserLoadedCallbacks();
             }      
         });    
 
