@@ -5,10 +5,10 @@
 const AuthGuard = {};
 
 const AUTH_DEFAULTS = {
-    loginPath:          "/login",
-    postAuthPath:       null,
-    publicLanding:      "/login",
-    assumeIfUndefined:  "auth"
+    loginPath:                      "/login",   // This is the path to send users to, to login
+    postAuthPath:                   null,       // The redirect path after completing login
+    publicLanding:                  "/login",   // Where to redirect users that have logged out to
+    assumeIfUndefined:              "auth",     // If a route doesn't explicitly specify whether it requiresAuth or not, assume this
 };
 
 /**
