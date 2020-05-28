@@ -22,12 +22,8 @@ const UserTransformFailsafe = {
             this.newTimeoutPromise()
         ])
         .then(result => {
-            if(!result) {
-                throw this.newUnresolvedError();
-            } else {
-                this.clearOutstanding();
-                return result;
-            }
+            this.clearOutstanding();
+            return result;
         })
         .catch(err => {
             console.warn("An error occurred while transforming the user");
@@ -120,6 +116,13 @@ export const VueUserPlugin = {
                 }
             } else {
                 console.warn("No user. TODO: Add another callback for checkedForUser");
+                if(transformer) {
+                    return UserTransformFailsafe.start( transformer(user) )
+                        .then(tUser => {
+                            this.user = tUser;
+                            // TODO: Add checked
+                        });                    
+                }
                 // this.user = null;
                 // this.runUserLoadedCallbacks();
             }      
