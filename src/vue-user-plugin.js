@@ -75,6 +75,23 @@ export const VueUserPlugin = {
     },
 
     /**
+     * Allows VueUserPlugin to act as a stand-in for Auth in VueFirebaseAuthPlugin
+     * Which enables you to use the transformed user in 
+     * @param {*} cb 
+     */
+    onAuthStateChanged(cb) {
+        if(this.user) {
+            cb(this.user);
+        } else {
+            plugin.onUserLoadedCallbacks.push({
+                vm: this,
+                callback: cb,
+                once: false
+            });          
+        }
+    },
+
+    /**
      * 
      * @param {*} Vue 
      * @param {*} options - auth, transformer; where the transformer function transforms Firebase's user object 
@@ -82,6 +99,12 @@ export const VueUserPlugin = {
     install: function(Vue, {auth, transformer, timeout}) {
         var plugin = this;
         UserTransformFailsafe.time = timeout || MAX_TRANSFORM_WAIT;
+
+        Object.defineProperty(plugin, "currentUser", {
+            get() {
+                return auth.currentUser;
+            }
+        });
 
         auth.onAuthStateChanged((user) => {
             if(user) {

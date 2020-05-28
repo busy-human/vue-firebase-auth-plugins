@@ -89,3 +89,19 @@ Usage
 You can set the postAuthPath to a string, or you can use a function that resolves to the path, in case it needs to be dynamically resolved. The function will be called with the router as the first argument and the resolved user as the second.
 
 It supports asynchronous functions in case you need to a do a lookup or fetch some additional data first.
+
+## Firebase Auth Stand-in
+
+VueUserPlugin provides a means to transform the user from Firebase (e.g. into a model, enrich it with data, etc.) But this can create a bit of disconnect from the user object being used in other parts of the application.
+
+To resolve this, the VueUserPlugin implements the interface needed from Firebase.Auth for VueFirebaseAuthGuard.
+
+Usage
+
+    // 1. Set up your VueUserPlugin
+    Vue.use(VueUserPlugin, { auth: firebase.auth(), transformer: getUserTransformer() });
+
+    // 2. Pass VueUserPlugin as auth instead of firebase.auth()
+    Vue.use(AuthGuard, { auth: VueUserPlugin, router, options: {postAuthPath: "/"} });
+
+VueUserPlugin will still authenticate correctly, but will pass your transformed user model/object into VueAuthGuard
