@@ -11,12 +11,23 @@ const AUTH_DEFAULTS = {
     assumeIfUndefined:              "auth",     // If a route doesn't explicitly specify whether it requiresAuth or not, assume this
 };
 
+function resolveOptions(defaults, overrides) {
+    var resolved = Object.assign({}, defaults);
+    Object.keys(overrides).forEach(key => {
+        if(overrides[key] !== undefined) {
+            resolved[key] = overrides[key];
+        }
+    });
+
+    return resolved;
+}
+
 /**
  * @typedef {Object} AuthGuardOptions
  * @prop {String} postAuthPath - Determines where to redirect to after authentication (required)
- * @prop {String} loginPath - The path to send to prompt for login
- * @prop {String} publicLanding - Where to send guests upon first getting into the app
- * @prop {String} assumeIfUndefined - If a route isn't listed as 'auth' or 'public', assume this by default:
+ * @prop {String} [loginPath] - The path to send to prompt for login
+ * @prop {String} [publicLanding] - Where to send guests upon first getting into the app
+ * @prop {String} [assumeIfUndefined] - If a route isn't listed as 'auth' or 'public', assume this by default:
  */
 
 /**
@@ -26,11 +37,11 @@ const AUTH_DEFAULTS = {
  * @param {Firebase.Auth} auth
  * @param {AuthGuardOptions} options
  */
-AuthGuard.install = function(Vue, {router, auth, options = {}}) {
+AuthGuard.install = function(router, auth, {loginPath,postAuthPath,publicLanding,assumeIfUndefined}=AUTH_DEFAULTS) {
     router.hasCheckedForSession = false;
     router.deferredRouting = null;
 
-    AuthGuard.config = Object.assign(AUTH_DEFAULTS, options);
+    AuthGuard.config = resolveOptions(AUTH_DEFAULTS, {loginPath,postAuthPath,publicLanding,assumeIfUndefined});
 
     if(!AuthGuard.config.postAuthPath) {
         console.warn('You must pass in postAuthPath with the AuthGuard.install options');
@@ -74,7 +85,7 @@ AuthGuard.install = function(Vue, {router, auth, options = {}}) {
         if(router.isLoginPage(path)) {
             isPublic = true;
         } else if(resolvedRoute) {
-            let requiresAuth = resolvedRoute.route.meta ? resolvedRoute.route.meta.requiresAuth : undefined;
+            let requiresAuth = resolvedRoute.meta ? resolvedRoute.meta.requiresAuth : undefined;
             isPublic = requiresAuth === undefined ? isPublic : !requiresAuth;
         }
 
@@ -95,8 +106,8 @@ AuthGuard.install = function(Vue, {router, auth, options = {}}) {
         var resolvedRoute = router.resolve(path);
         if(router.isLoginPage(path)) {
             requiresAuth = false;
-        } else if(resolvedRoute && resolvedRoute.route.meta && resolvedRoute.route.meta.requiresAuth !== undefined) {
-            requiresAuth = resolvedRoute.route.meta.requiresAuth;
+        } else if(resolvedRoute && resolvedRoute.meta && resolvedRoute.meta.requiresAuth !== undefined) {
+            requiresAuth = resolvedRoute.meta.requiresAuth;
         }      
 
         return requiresAuth;
