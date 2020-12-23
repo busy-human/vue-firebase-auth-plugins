@@ -26,7 +26,7 @@ By default, AuthGuard will assume a route requires auth. This can be changed by 
 
 ### Installation
 
-If you are using ES6+, you can simply use import "vue-firebase-auth-plugins". But if you need to use it an ES5 environment, or Node.js, you'll want to use /dist/index.es5.js when importing/requiring.
+If you are using ES6+, you can simply use import "vue-firebase-auth-plugins". But if you need to use it in an ES5 environment, or Node.js, you'll want to use /dist/index.es5.js when importing/requiring.
 
 
     // If you are using require/ES5
@@ -56,7 +56,7 @@ You can specify whether or not a specific route requires authentication on the m
 
 ### How it Works
 
-Because there's a variable delay in waiting to know if we are actually authenticated (or have a session we can re-use), the AuthGuard starts by suspending routing until know 
+Because there's a variable delay in waiting to know if we are actually authenticated (or have a session we can re-use), the AuthGuard starts by suspending routing until know.
 
 ### Changing the default assumption
 
