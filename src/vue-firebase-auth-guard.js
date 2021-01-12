@@ -64,7 +64,7 @@ AuthGuard.install = function(router, auth, {loginPath,postAuthPath,publicLanding
         if(!router.hasCheckedForSession) {
             router.hasCheckedForSession = true;
             router.resumeRouting();
-        } else if(user && router.isPublicRoute( router.currentRoute.path)) {
+        } else if(user && router.isPublicRoute( router.currentRoute.value.path)) {
             // The user just logged in / signed up
             resolvePostAuthPath()
                 .then(path => {

@@ -1,46 +1,76 @@
 import Promise from "bluebird";
 
-const MAX_TRANSFORM_WAIT = 1000 * 10;
-const UserTransformFailsafe = {
-    timeout: null,
-    pendingPromise: null,
-    time: MAX_TRANSFORM_WAIT,
-    newUnresolvedError() {
-        return new Error("User Transformation Timed Out. The User Transform promise passed to VueUserPlugin did not resolve or rejected")
-    },
-    newTimeoutPromise() {
-        this.clearOutstanding();
-        return new Promise((resolve, reject) => {
-            this.timeout = setTimeout(() => {
-                reject(this.newUnresolvedError());
-            }, UserTransformFailsafe.time);
-        });
-    },
-    start(transformPromise) {
-        return Promise.race([
-            Promise.resolve(transformPromise),
-            this.newTimeoutPromise()
-        ])
-        .then(result => {
-            this.clearOutstanding();
-            return result;
-        })
-        .catch(err => {
-            console.warn("An error occurred while transforming the user");
-            console.error(err);
-        });
-    },
-    clearOutstanding() {
-        if(this.timeout) {
-            clearTimeout(this.timeout);
-        }
-        this.timeout = null;
-    },
-    transformSuccess() {
-        this.clearOutstanding();
+class CallbackController {
+    constructor() {
+        this.callbacks = [];
+        this.callbacksToDelete = [];
+        this.previousCall = null;
     }
-};
+    /**
+     * 
+     * @param {*} callback 
+     * @param {*} options 
+     * @param {boolean} [options.once] - Whether to run the callback just one time and then unsubscribe it
+     * @param {boolean} [options.ignorePreviousCalls] - If there is a previous call this handler missed due to timing of binidng, it will normally call it immediately
+     */
+    add(callback, options) {
+        var resolvedData = Object.assign({}, { callback }, options);
+        this.callbacks.push(resolvedData);
 
+        // An event occurred prior to binding this listener, send it on
+        if(this.previousCall && !options.ignorePreviousCalls) {
+            this.runSingleCallback(callbackMeta, this.previousCall.data, this.previousCall.sideEffect);
+        }
+    }
+
+    /**
+     * Run a single callback; used by the .run() call, but also in add for previousCalls
+     * @param {*} callbackMeta 
+     * @param {*} data 
+     * @param {*} sideEffect 
+     */
+    runSingleCallback(callbackMeta, data, sideEffect) {
+        if( ! callbackMeta.__delete) {
+            if(sideEffect) {
+                sideEffect(callbackMeta, data);
+            }
+    
+            if(callbackMeta.callback) {
+                callbackMeta.callback.call(callbackMeta.vm, data);
+    
+                if(callbackMeta.once) {
+                    this.callbacksToDelete.push(callbackMeta);
+                    callbackMeta.__delete = true;
+                }
+            }
+        }
+    }
+
+    /**
+     * Cleanup any callbacks marked for deletion (E.g. single-run callbacks)
+     */
+    cleanupMarkedCallbacks() {
+        this.callbacksToDelete.forEach(cb => {
+            var index = this.callbacks.indexOf(cb);
+            this.callbacks.splice(index, 1);
+        });
+    }
+
+    /**
+     * 
+     * @param {*} data - Data to be passed into the callback functions, if any
+     * @param {function} [sideEffect] - A side effect function to run against each registered callback
+     */
+    run(data, sideEffect) {
+        this.callbacks.forEach(cb => {
+            this.runSingleCallback(cb, data, sideEffect);
+        });
+
+        this.previousCall = { data, sideEffect };
+
+        this.cleanupMarkedCallbacks();
+    }  
+}
 
 /**
  * Makes Firebase.auth.currentUser accessible across every vue instance via user
@@ -48,25 +78,12 @@ const UserTransformFailsafe = {
  */
 export const VueUserPlugin = {
     user: null,
-    onUserLoadedCallbacks: [],
+    onUserModelChangedCallbacks: new CallbackController(),
+    onAuthStateChangedCallbacks: new CallbackController(),
 
-    runUserLoadedCallbacks() {
-        var toDelete = [];
-        this.onUserLoadedCallbacks.forEach(cb => {
+    runUserModelChangedCallbacks() {
+        return this.onUserModelChangedCallbacks.run(this.user, cb => {
             cb.vm.user = this.user;
-
-            if(cb.callback) {
-                cb.callback.call(cb.vm, this.user);
-
-                if(cb.once) {
-                    toDelete.push(cb);
-                }
-            }
-        });
-
-        toDelete.forEach(cb => {
-            var index = this.onUserLoadedCallbacks.indexOf(cb);
-            this.onUserLoadedCallbacks.splice(index, 1);
         });
     },
 
@@ -79,9 +96,8 @@ export const VueUserPlugin = {
         if(this.user) {
             cb(this.user);
         } else {
-            plugin.onUserLoadedCallbacks.push({
+            plugin.onUserModelChangedCallbacks.add(cb, {
                 vm: this,
-                callback: cb,
                 once: false
             });          
         }
@@ -90,11 +106,15 @@ export const VueUserPlugin = {
     /**
      * 
      * @param {*} Vue 
-     * @param {*} options - auth, transformer; where the transformer function transforms Firebase's user object 
+     * @param {*} options - auth, modelBuilder; where the modelBuilder function returns some sort of data structure associated with the user
      */
-    install: function(Vue, {auth, transformer, timeout}) {
+    install: function(Vue, {auth, modelBuilder}) {
         var plugin = this;
-        UserTransformFailsafe.time = timeout || MAX_TRANSFORM_WAIT;
+        this.user = {
+            auth: () => null,
+            authData: null,
+            model: null
+        };
 
         Object.defineProperty(plugin, "currentUser", {
             get() {
@@ -102,31 +122,34 @@ export const VueUserPlugin = {
             }
         });
 
-        auth.onAuthStateChanged((user) => {
-            if(user) {
-                if(transformer) {
-                    return UserTransformFailsafe.start( transformer(user) )
-                        .then(tUser => {
-                            this.user = tUser;
-                            this.runUserLoadedCallbacks();
+        var updateUserAuth = (userAuth) => {
+            this.user.auth = () => userAuth;
+            var {displayName, email, emailVerified, isAnonymous, metaData, phoneNumber, photoURL, uid} = userAuth;
+            this.user.authData = {displayName, email, emailVerified, isAnonymous, metaData, phoneNumber, photoURL, uid};
+        };
+
+        var updateModel = (model) => {
+            this.user.model = model;
+            this.runUserModelChangedCallbacks();
+        };
+
+        // Listen for changes to the auth state
+        auth.onAuthStateChanged((userAuth) => {
+            if(userAuth) {
+                updateUserAuth(userAuth);
+                if(modelBuilder) {
+                    return Promise.resolve( modelBuilder(userAuth) )
+                        .then(model => {
+                            updateModel(model);
                         });
-                } else {
-                    this.user = user;
-                    this.runUserLoadedCallbacks();
                 }
             } else {
-                console.warn("No user. TODO: Add another callback for checkedForUser");
-                if(transformer) {
-                    return UserTransformFailsafe.start( transformer(user) )
-                        .then(tUser => {
-                            this.user = tUser;
-                            // TODO: Add checked
-                        });                    
+                updateUserAuth(null);
+                if(modelBuilder) {
+                    updateModel(null);
                 }
-                // this.user = null;
-                // this.runUserLoadedCallbacks();
             }      
-        });    
+        });
 
         Vue.mixin({
             data() {
@@ -136,27 +159,23 @@ export const VueUserPlugin = {
             },
             mounted: function() {
                 this.auth = auth;
-                if(this.$options.userLoaded) {
-                    if(plugin.user) {
-                        this.$data.user = plugin.user;
-                        this.$options.userLoaded.call(this, plugin.user);
-                    } else {
-                        plugin.onUserLoadedCallbacks.push({
-                            vm: this,
-                            callback: this.$options.userLoaded,
-                            once: true
-                        });
-                    }                    
+                if(this.$options.onAuthStateChanged) {
+                    plugin.onAuthStateChangedCallbacks.add(this.$options.userModelChanged, {
+                        vm: this
+                    });
+                }
+                if(this.$options.userModelChanged) {
+                    if(!modelBuilder) {
+                        console.warn(`[WARN] userModelChanged hook won't be called since no modelBuilder was provided to VueUserPlugin.`)
+                    }
+                    plugin.onUserModelChangedCallbacks.add(this.$options.userModelChanged, {
+                        vm: this
+                    });            
                 } else {
-                    if(plugin.user) {
-                        this.$data.user = plugin.user;
-                    } else {
-                        plugin.onUserLoadedCallbacks.push({
-                            vm: this,
-                            callback: null,
-                            once: true
-                        });
-                    }                     
+                    plugin.onUserModelChangedCallbacks.add(null, {
+                        vm: this,
+                        once: true
+                    });
                 }
             }
         });

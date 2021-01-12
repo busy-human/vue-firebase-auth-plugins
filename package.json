@@ -1,6 +1,6 @@
 {
   "name": "vue-firebase-auth-plugins",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "description": "Used for protecting routes requiring authentication",
   "main": "index.js",
   "dependencies": {

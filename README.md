@@ -80,9 +80,11 @@ Usage
     {
         data() { return {...} },
         userLoaded() {
-            console.log("UID:", this.user.uid);
+            console.log("UID:", this.user.auth.uid);
         }
     }
+
+
 
 ## postAuthPath
 
@@ -90,18 +92,32 @@ You can set the postAuthPath to a string, or you can use a function that resolve
 
 It supports asynchronous functions in case you need to a do a lookup or fetch some additional data first.
 
-## Firebase Auth Stand-in
+## Changes in 2.x
 
-VueUserPlugin provides a means to transform the user from Firebase (e.g. into a model, enrich it with data, etc.) But this can create a bit of disconnect from the user object being used in other parts of the application.
+### User Transformation
 
-To resolve this, the VueUserPlugin implements the interface needed from Firebase.Auth for VueFirebaseAuthGuard.
+In previous versions of the vue-firebase-auth-guard library, there was a pattern to transform or wrap the return Firebase auth object. This created a confusing pattern for developers unfamiliar with what the tool was doing, and created ambiguity between what Firebase Auth provided and what was available on our model.
 
-Usage
+We no longer transform or "wrap" the underlying firebase auth object. It is exposed directly and separately. We also move away from efforts to replicate, simplify, or wrap any features or data offered by Firebase Auth.
 
-    // 1. Set up your VueUserPlugin
-    Vue.use(VueUserPlugin, { auth: firebase.auth(), transformer: getUserTransformer() });
+    // Before
+    console.log("UID:", this.user.uid);
 
-    // 2. Pass VueUserPlugin as auth instead of firebase.auth()
-    Vue.use(AuthGuard, { auth: VueUserPlugin, router, options: {postAuthPath: "/"} });
+    // After
+    console.log("UID:", this.user.authData.uid);
 
-VueUserPlugin will still authenticate correctly, but will pass your transformed user model/object into VueAuthGuard
+Instead of wrapping or transforming the user auth, we now affix a "model" to the "user" object returned by VueUserPlugin, like so:
+
+    // Before
+    Vue.use(VueUserPlugin, { auth: Firebase.auth(), transformer: (auth) => userAuthPlusModel });
+
+    // After
+    Vue.use(VueUserPlugin, { auth: Firebase.auth(), modelBuilder: (userAuth) => userModel });
+
+To add more specificty and clarity, userLoaded has been changed to userModelChanged. So inside of calling components, you'll write your function like this now:
+
+    userModelChanged( user ) {
+        // Do something with the user
+    }
+
+Likewise, this also means that when the user is logged out the model will be cleared and userModelChanged will be called to indicate the model is gone.
