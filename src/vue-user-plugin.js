@@ -14,12 +14,12 @@ class CallbackController {
      * @param {boolean} [options.ignorePreviousCalls] - If there is a previous call this handler missed due to timing of binidng, it will normally call it immediately
      */
     add(callback, options) {
-        var resolvedData = Object.assign({}, { callback }, options);
-        this.callbacks.push(resolvedData);
+        var callbackMeta = Object.assign({}, { callback }, options);
+        this.callbacks.push(callbackMeta);
 
         // An event occurred prior to binding this listener, send it on
         if(this.previousCall && !options.ignorePreviousCalls) {
-            this.runSingleCallback(callback, this.previousCall.data, this.previousCall.sideEffect);
+            this.runSingleCallback(callbackMeta, this.previousCall.data, this.previousCall.sideEffect);
         }
     }
 
