@@ -19,7 +19,7 @@ class CallbackController {
 
         // An event occurred prior to binding this listener, send it on
         if(this.previousCall && !options.ignorePreviousCalls) {
-            this.runSingleCallback(callbackMeta, this.previousCall.data, this.previousCall.sideEffect);
+            this.runSingleCallback(callback, this.previousCall.data, this.previousCall.sideEffect);
         }
     }
 
