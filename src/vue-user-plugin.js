@@ -87,6 +87,10 @@ export const VueUserPlugin = {
         });
     },
 
+    runAuthStateChangedCallbacks() {
+        return this.onAuthStateChangedCallbacks.run(this.user.auth());
+    },
+
     /**
      * Allows VueUserPlugin to act as a stand-in for Auth in VueFirebaseAuthPlugin
      * Which enables you to use the transformed user in 
@@ -126,6 +130,7 @@ export const VueUserPlugin = {
             this.user.auth = () => userAuth;
             var {displayName, email, emailVerified, isAnonymous, metaData, phoneNumber, photoURL, uid} = userAuth;
             this.user.authData = {displayName, email, emailVerified, isAnonymous, metaData, phoneNumber, photoURL, uid};
+            this.runAuthStateChangedCallbacks();
         };
 
         var updateModel = (model) => {
@@ -160,7 +165,7 @@ export const VueUserPlugin = {
             mounted: function() {
                 this.auth = auth;
                 if(this.$options.onAuthStateChanged) {
-                    plugin.onAuthStateChangedCallbacks.add(this.$options.userModelChanged, {
+                    plugin.onAuthStateChangedCallbacks.add(this.$options.onAuthStateChanged, {
                         vm: this
                     });
                 }
