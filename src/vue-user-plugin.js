@@ -128,8 +128,10 @@ export const VueUserPlugin = {
 
         var updateUserAuth = (userAuth) => {
             this.user.auth = () => userAuth;
-            var {displayName, email, emailVerified, isAnonymous, metaData, phoneNumber, photoURL, uid} = userAuth;
-            this.user.authData = {displayName, email, emailVerified, isAnonymous, metaData, phoneNumber, photoURL, uid};
+            if(userAuth) {
+                var {displayName, email, emailVerified, isAnonymous, metaData, phoneNumber, photoURL, uid} = userAuth;
+                this.user.authData = {displayName, email, emailVerified, isAnonymous, metaData, phoneNumber, photoURL, uid};
+            }
             this.runAuthStateChangedCallbacks();
         };
 
