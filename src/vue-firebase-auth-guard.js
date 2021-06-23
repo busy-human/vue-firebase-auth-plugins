@@ -75,6 +75,10 @@ AuthGuard.install = function(router, auth, {loginPath,postAuthPath,publicLanding
             router.push(AuthGuard.config.publicLanding);
         }
     });
+    
+    function resolveMeta(routeOrRouteLike) {
+        return routeOrRouteLike.meta || routeOrRouteLike.route.meta;
+    }
 
     /**
      * Public Routes do not require authentication
@@ -85,7 +89,7 @@ AuthGuard.install = function(router, auth, {loginPath,postAuthPath,publicLanding
         if(router.isLoginPage(path)) {
             isPublic = true;
         } else if(resolvedRoute) {
-            let requiresAuth = resolvedRoute.meta ? resolvedRoute.meta.requiresAuth : undefined;
+            let requiresAuth = resolveMeta(resolvedRoute) ? resolveMeta(resolvedRoute).requiresAuth : undefined;
             isPublic = requiresAuth === undefined ? isPublic : !requiresAuth;
         }
 
@@ -106,8 +110,8 @@ AuthGuard.install = function(router, auth, {loginPath,postAuthPath,publicLanding
         var resolvedRoute = router.resolve(path);
         if(router.isLoginPage(path)) {
             requiresAuth = false;
-        } else if(resolvedRoute && resolvedRoute.meta && resolvedRoute.meta.requiresAuth !== undefined) {
-            requiresAuth = resolvedRoute.meta.requiresAuth;
+        } else if(resolvedRoute && resolveMeta(resolvedRoute) && resolveMeta(resolvedRoute).requiresAuth !== undefined) {
+            requiresAuth = resolveMeta(resolvedRoute).requiresAuth;
         }      
 
         return requiresAuth;
