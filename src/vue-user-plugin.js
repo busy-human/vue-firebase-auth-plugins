@@ -83,12 +83,14 @@ export const VueUserPlugin = {
 
     runUserModelChangedCallbacks() {
         return this.onUserModelChangedCallbacks.run(this.user, cb => {
-            cb.vm.user = this.user;
+            cb.vm.user = this.user;            
         });
     },
 
     runAuthStateChangedCallbacks() {
-        return this.onAuthStateChangedCallbacks.run(this.user.auth());
+        return this.onAuthStateChangedCallbacks.run(this.user.auth(), cb => {
+            cb.vm.loggedIn = this.user.loggedIn;
+        });
     },
 
     /**
@@ -117,7 +119,8 @@ export const VueUserPlugin = {
         this.user = {
             auth: () => null,
             authData: null,
-            model: null
+            model: null,
+            loggedIn: false
         };
 
         Object.defineProperty(plugin, "currentUser", {
@@ -131,6 +134,10 @@ export const VueUserPlugin = {
             if(userAuth) {
                 var {displayName, email, emailVerified, isAnonymous, metaData, phoneNumber, photoURL, uid} = userAuth;
                 this.user.authData = {displayName, email, emailVerified, isAnonymous, metaData, phoneNumber, photoURL, uid};
+                this.user.loggedIn = true;
+            } else {
+                this.user.authData = null;
+                this.user.loggedIn = false;
             }
             this.runAuthStateChangedCallbacks();
         };
@@ -161,7 +168,8 @@ export const VueUserPlugin = {
         Vue.mixin({
             data() {
                 return {
-                    user: null
+                    user: null,
+                    loggedIn: false
                 };
             },
             mounted: function() {
