@@ -88,7 +88,6 @@ export const VueUserPlugin = {
     runUserModelChangedCallbacks() {
         return this.onUserModelChangedCallbacks.run(this.user, cb => {
             cb.vm.user = this.user;
-            cb.vm.loggedIn = this.user.loggedIn;
         });
     },
 
@@ -173,9 +172,13 @@ export const VueUserPlugin = {
         Vue.mixin({
             data() {
                 return {
-                    user: null,
-                    loggedIn: false
+                    user: null
                 };
+            },
+            computed: {
+                loggedIn() {
+                    return this.user && this.user.loggedIn;
+                }
             },
             mounted: function() {
                 this.auth = auth;
