@@ -2,6 +2,7 @@
  * Import AuthGuard and then call AuthGuard.install(router, auth, options)
  * AuthGuard should be installed before other route guards or interceptors are applied
  */
+const {CallbackController} = require("./callbacks.js");
 const AuthGuard = {};
 
 const AUTH_DEFAULTS = {
@@ -38,6 +39,7 @@ function resolveOptions(defaults, overrides) {
  * @param {AuthGuardOptions} options
  */
 AuthGuard.install = function(router, auth, {loginPath,postAuthPath,publicLanding,assumeIfUndefined}=AUTH_DEFAULTS) {
+    var onCheckedForSessionCallbacks = new CallbackController();
     router.hasCheckedForSession = false;
     router.deferredRouting = null;
 
@@ -78,6 +80,10 @@ AuthGuard.install = function(router, auth, {loginPath,postAuthPath,publicLanding
     
     function resolveMeta(routeOrRouteLike) {
         return routeOrRouteLike.meta || routeOrRouteLike.route.meta;
+    }
+
+    router.onCheckedForSession = function(callback) {
+        onCheckedForSessionCallbacks.add(callback, { once: true });
     }
 
     /**
@@ -150,9 +156,11 @@ AuthGuard.install = function(router, auth, {loginPath,postAuthPath,publicLanding
         } else if(auth.currentUser) {
             console.log("Router: User logged in");
             router.push(AuthGuard.config.postAuthPath);
+            onCheckedForSessionCallbacks.run( {router} );
         } else {
             console.log("Router: No session");   
             router.push(AuthGuard.config.loginPath);
+            onCheckedForSessionCallbacks.run( {router} );
         }
     };    
 

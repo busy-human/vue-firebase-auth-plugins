@@ -121,3 +121,7 @@ To add more specificty and clarity, userLoaded has been changed to userModelChan
     }
 
 Likewise, this also means that when the user is logged out the model will be cleared and userModelChanged will be called to indicate the model is gone.
+
+### onCheckedForSession
+
+You can call onCheckedForSession with a callback that will execute right after the router has resolved to a new route based on the status of the user. This will usually mean the login is visible or the screen the user had initially typed into their browser will load if they're logged in.
