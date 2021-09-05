@@ -104,7 +104,7 @@ AuthGuard.install = function(router, auth, {loginPath,postAuthPath,publicLanding
 
     router.isLoginPage = function( path ) {
         var pathStr = path.fullPath || path;
-        return pathStr.indexOf(AUTH_DEFAULTS.loginPath) >= 0;
+        return pathStr.indexOf(AuthGuard.config.loginPath) >= 0;
     };
 
     /**
