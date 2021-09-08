@@ -12,7 +12,7 @@ class CallbackController {
      * @param {boolean} [options.once] - Whether to run the callback just one time and then unsubscribe it
      * @param {boolean} [options.ignorePreviousCalls] - If there is a previous call this handler missed due to timing of binidng, it will normally call it immediately
      */
-    add(callback, options) {
+    add(callback, options={ once: false, ignorePreviousCalls: false }) {
         var callbackMeta = Object.assign({}, { callback }, options);
         this.callbacks.push(callbackMeta);
 
