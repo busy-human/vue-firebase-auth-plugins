@@ -12,8 +12,10 @@ const globals = {
     initialized   : false,
     user          : null,
     authenticated : false,
+    authChecked   : false,
     onAuth        : new CallbackController(),
-    onUnauth      : new CallbackController()
+    onUnauth      : new CallbackController(),
+    onAuthChecked : new CallbackController()
 };
 
 
@@ -35,17 +37,26 @@ function initialize(auth) {
  */
 function updateUserAuth(firebaseAuth) {
     if(firebaseAuth) {
+        globals.authenticated.value = true;
         globals.user.value = {
             email: firebaseAuth.email,
             uid: firebaseAuth.uid
         };
-        return globals.onAuth.run(globals.user.value);
+        globals.onAuth.run(globals.user.value);
 
     } else {
+        globals.authenticated.value = false;
         globals.user.value = null;
-        return globals.onUnauth.run(globals.user.value);        
+        globals.onUnauth.run(globals.user.value);        
     }
+    globals.authChecked = true;
+    globals.onAuthChecked.run(globals.user.value);
 }
+
+/**
+ * @typedef {object} VueUserCompositionResult
+ * @property {object}  
+ */
 
 /**
  * 
@@ -57,6 +68,7 @@ export function VueUserComposition(auth) {
         user          : globals.user,
         authenticated : globals.authenticated,
         onAuth        : (cb) => globals.onAuth.add(cb),
-        onUnauth      : (cb) => globals.onUnauth.add(cb)
+        onUnauth      : (cb) => globals.onUnauth.add(cb),
+        onAuthChecked : (cb) => globals.onAuthChecked.add(cb)
     };
 }
