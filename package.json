@@ -4,13 +4,15 @@
   "description": "Used for protecting routes requiring authentication",
   "main": "index.js",
   "dependencies": {
-    "bluebird": "^3.7.2"
+    "bluebird": "^3.7.2",
+    "vue": "^2.6.14"
   },
   "devDependencies": {
+    "@babel/core": "^7.8.4",
     "babel-loader": "^8.0.6",
-    "webpack-cli": "^3.3.10",
+    "firebase": "8.10.0",
     "webpack": "^4.41.5",
-    "@babel/core": "^7.8.4"
+    "webpack-cli": "^3.3.10"
   },
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
