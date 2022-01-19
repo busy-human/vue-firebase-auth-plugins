@@ -11,6 +11,7 @@ import {CallbackController} from "./callbacks.js";
 const globals = {
     initialized   : false,
     user          : null,
+    userspace     : null,
     authenticated : false,
     authChecked   : false,
     onAuth        : new CallbackController(),
@@ -23,17 +24,18 @@ function initialize(auth) {
     if(!globals.initialized) {
         globals.initialized   = true;
         globals.user          = ref(null);
+        globals.userspace     = ref(null);
         globals.authenticated = ref(false);
 
         auth.onAuthStateChanged((userAuth) => {
-            updateUserAuth(userAuth);    
-        });        
+            updateUserAuth(userAuth);
+        });
     }
 }
 
 /**
- * 
- * @param {import("firebase").default.UserInfo} firebaseAuth 
+ *
+ * @param {import("firebase").default.UserInfo} firebaseAuth
  */
 function updateUserAuth(firebaseAuth) {
     if(firebaseAuth) {
@@ -47,28 +49,26 @@ function updateUserAuth(firebaseAuth) {
     } else {
         globals.authenticated.value = false;
         globals.user.value = null;
-        globals.onUnauth.run(globals.user.value);        
+        globals.onUnauth.run(globals.user.value);
     }
     globals.authChecked = true;
     globals.onAuthChecked.run(globals.user.value);
 }
 
 /**
- * @typedef {object} VueUserCompositionResult
- * @property {object}  
+ *
+ * @param {import("@types/firebase")} [auth]
  */
-
-/**
- * 
- * @param {import("@types/firebase")} auth 
- */
-export function VueUserComposition(auth) {
+function install(auth) {
     initialize(auth);
-    return {
-        user          : globals.user,
-        authenticated : globals.authenticated,
-        onAuth        : (cb) => globals.onAuth.add(cb),
-        onUnauth      : (cb) => globals.onUnauth.add(cb),
-        onAuthChecked : (cb) => globals.onAuthChecked.add(cb)
-    };
 }
+
+export const VueUserComposition = {
+    install       : install,
+    user          : globals.user,
+    userspace     : globals.userspace,
+    authenticated : globals.authenticated,
+    onAuth        : (cb) => globals.onAuth.add(cb),
+    onUnauth      : (cb) => globals.onUnauth.add(cb),
+    onAuthChecked : (cb) => globals.onAuthChecked.add(cb)
+};
