@@ -1,4 +1,4 @@
-import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult } from "firebase/auth";
+import { RecaptchaVerifier, signInWithPhoneNumber, ConfirmationResult, PhoneAuthCredential, signInWithCredential } from "firebase/auth";
 import { FirebaseError } from "@firebase/util";
 import { MainAuth, assertMainAuth } from "./auth-state.js";
 
@@ -62,6 +62,13 @@ class PhoneNumberAuthenticatorClass {
         this.recaptchaVerifier = null;
         this.recaptchaWidgetId = null;
         this.confirmationResult = null;
+    }
+
+    signInWithVerificationIdAndCode(verificationId: string, code: string){
+        assertMainAuth();
+        const credential = PhoneAuthCredential.fromJSON({verificationId, code});
+        if(!credential) throw new Error('Unable to create PhoneAuthCredential from JSON');
+        return signInWithCredential(MainAuth.auth, credential);
     }
 
 }

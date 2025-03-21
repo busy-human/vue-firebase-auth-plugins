@@ -123,37 +123,45 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
     startListener() {
         // Listen for changes to the auth state
         this.auth.onAuthStateChanged(async (user) => {
-            try {
-                this.updatingAuth = true;
-                let eventName: AuthEvent;
-                if(user) {
-                    this.firebaseUser = user;
-                    this.uid = user.uid;
-                    this.claims = (await user.getIdTokenResult()).claims;
-                    await this.resolveUserModel();
-                    eventName = "authenticated";
-                } else {
-                    this.firebaseUser = null;
-                    this.uid = null;
-                    this.userModel = null;
-                    this.claims = null;
-                    eventName = "unauthenticated";
-                }
-                this.hasCheckedForSession = true;
-                this.updatingAuth = false;
-
-                // Run callbacks (if any)
-                this.onAuthStateChangedCallbacks.run( this.getSnapshot(eventName) );
-            } catch(err: any) {
-                if("code" in err) {
-                    this.logFirebaseError(err);
-                } else {
-                    console.warn("An error occurred on the auth state manager: ", err.message);
-                    console.error(err);
-                    this.updatingAuth = false;
-                }
-            }
+            this.onAuthStateChangedHandler(user);
         });
+    }
+
+    /**
+     * Handles changing the auth state (firebase user)
+     * @param user
+     */
+    private async onAuthStateChangedHandler(user: FirebaseUser | null) {
+        try {
+            this.updatingAuth = true;
+            let eventName: AuthEvent;
+            if(user) {
+                this.firebaseUser = user;
+                this.uid = user.uid;
+                this.claims = (await user.getIdTokenResult()).claims;
+                await this.resolveUserModel();
+                eventName = "authenticated";
+            } else {
+                this.firebaseUser = null;
+                this.uid = null;
+                this.userModel = null;
+                this.claims = null;
+                eventName = "unauthenticated";
+            }
+            this.hasCheckedForSession = true;
+            this.updatingAuth = false;
+
+            // Run callbacks (if any)
+            this.onAuthStateChangedCallbacks.run( this.getSnapshot(eventName) );
+        } catch(err: any) {
+            if("code" in err) {
+                this.logFirebaseError(err);
+            } else {
+                console.warn("An error occurred on the auth state manager: ", err.message);
+                console.error(err);
+                this.updatingAuth = false;
+            }
+        }
     }
 
     convertAuthError(errorCode: string) {
@@ -204,6 +212,16 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
                 }, { once: true });
             }
         });
+    }
+
+    /**
+     * Advanced method; use this to manually set the firebase user
+     * in cases where a special authentication method is used or
+     * required outside of what this module supports/provides.
+     * @param user
+     */
+    overrideFirebaseUser(user: FirebaseUser | null) {
+        this.auth.updateCurrentUser(user);
     }
 
     async logOut(options: AuthLogOutOptions = { cleanup: false }) {
