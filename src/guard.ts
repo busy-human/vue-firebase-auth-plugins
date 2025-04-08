@@ -19,14 +19,22 @@ type ResumeRoutingCallbackOptions = {
 export class AuthGuardTracker {
     router                      : Router;
     config                      : AuthGuardOptions = AUTH_DEFAULTS;
-    userRouting?                : Partial<AuthRouteMap>
+    userRouting?                : Partial<AuthRouteMap>;
     deferredRouting?            : DeferredRouting;
     onCheckedForSessionCallbacks: CallbackController<ResumeRoutingCallbackOptions>;
+    autoRouting: {
+        onLogin: boolean;
+    };
+    routingMutexLock?: Promise<void>;
 
     constructor(options: AuthGuardTrackerOptions) {
         this.router = options.router;
         this.onCheckedForSessionCallbacks = new CallbackController();
         this.config = resolveOptions(AUTH_DEFAULTS, options);
+        this.autoRouting = {
+            /** Whether the router will automatically try to navigate on login */
+            onLogin: true
+        };
 
         // Track changes to the user routing
         MainAuth.onChange((data) => {
@@ -74,7 +82,34 @@ export class AuthGuardTracker {
         }
         this.router.push(path);
     }
+    /**
+     * Temporarily lock the auth guard routing
+     * This is useful for when you want to do something before the router is allowed to resume
+     * @param promiseOrCallback
+     * @returns
+     */
+    async lockRoutingUntilResolved(promiseOrCallback: Promise<void> | (() => Promise<void>)) {
+        if(this.routingMutexLock) {
+            throw new Error("AuthGuard only supports one lock at a time");
+        }
+        if(promiseOrCallback instanceof Promise) {
+            this.routingMutexLock = promiseOrCallback;
+        } else if (typeof promiseOrCallback === "function") {
+            this.routingMutexLock = new Promise((resolve, reject) => {
+                promiseOrCallback().then(() => {
+                    resolve();
+                }).catch((e) => {
+                    reject(e);
+                });
+            });
+        }
+        await this.routingMutexLock;
+    }
     async resumeRouting() {
+        if(this.routingMutexLock) {
+            await this.routingMutexLock;
+            this.routingMutexLock = undefined;
+        }
         if (this.deferredRouting && (this.isPublicRoute(this.deferredRouting.to) || MainAuth.loggedIn)) {
             console.log("Resuming attempted routing");
             const rt = this.deferredRouting;

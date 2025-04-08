@@ -14,7 +14,7 @@ class AuthGuardBootstrapper {
         });
 
         MainAuth.onChange((data) => {
-            if (data.loggedIn && guard.isPublicRoute(router.currentRoute.value.path)) {
+            if (data.loggedIn && guard.isPublicRoute(router.currentRoute.value.path) && guard.autoRouting.onLogin) {
                 // The data.loggedIn just logged in / signed up
                 guard.pushTo("postAuth");
 
@@ -24,7 +24,6 @@ class AuthGuardBootstrapper {
 
             } else if (data.hasCheckedForSession && guard.deferredRouting) {
                 guard.resumeRouting();
-
             }
         });
 
