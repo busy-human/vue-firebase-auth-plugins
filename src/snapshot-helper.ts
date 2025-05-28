@@ -2,7 +2,7 @@ import { MainAuth } from "./auth-state";
 import { UserModelMap } from "./types";
 import { DocumentReference, onSnapshot, Unsubscribe } from "firebase/firestore";
 
-export interface UserModelSnapshotHelperOptions {
+export interface ApplyUserModelSnapshotsOptions {
     /** Callback for the first snapshot (whether it exists or not) */
     onFirstSnapshot?: (data: any) => void
 }
@@ -11,10 +11,10 @@ export interface UserModelSnapshotHelperOptions {
  * Helps set up a firestore snapshot listener for a user model
  * and applies the snapshot to the auth user model.
  */
-export function userModelSnapshotHelper (
+export function applyUserModelSnapshots (
     reference: DocumentReference,
 
-    options: UserModelSnapshotHelperOptions = {}
+    options: ApplyUserModelSnapshotsOptions = {}
 ) {
     let hasRunFirstSnapshot = false;
     let unsubscribe: Unsubscribe | null = onSnapshot(reference, (snapshot) => {
