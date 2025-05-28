@@ -91,6 +91,10 @@ function initialize() {
                 globals.onUnauth.run(globals.user.ref.value);
             }
         });
+
+        MainAuth.onUserModelChanged((model) => {
+            globals.model.ref.value = model;
+        });
     }
 }
 

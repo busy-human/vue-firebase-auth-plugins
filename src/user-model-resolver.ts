@@ -2,6 +2,9 @@ import { User as FirebaseUser, ParsedToken as CustomClaimsToken } from "firebase
 import { AuthRouteMap, MatcherOption, MatcherPattern, UserModelMap, UserModelResolverOptions } from "./types.js";
 
 
+/**
+ * Resolves the correct user model based on the Firebase user, custom claims, etc.
+ */
 export class UserModelResolver<TypeMap extends UserModelMap> {
     map: TypeMap;
     defaultModel?: keyof TypeMap;

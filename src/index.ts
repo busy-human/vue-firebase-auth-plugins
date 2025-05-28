@@ -8,3 +8,4 @@ export * from "./email-auth.js";
 export * from "./vue-firebase-auth-guard.js";
 export * from "./vue-user-composition.js";
 export * from "./vue-user-plugin.js";
+export * from "./snapshot-helper.js";

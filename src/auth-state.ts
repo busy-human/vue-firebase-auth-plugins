@@ -18,8 +18,11 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
     hasCheckedForSession        = false;
     updatingAuth                = false;
 
-    private onAuthStateChangedCallbacks : CallbackController<AuthStateSnapshot<TypeMap, any>>;
+    private onAuthStateChangedCallbacks  : CallbackController<AuthStateSnapshot<TypeMap, any>>;
 	private onPreAuthLogoutHookCallbacks : CallbackController<void>;
+    private onUserModelChangedCallbacks  : CallbackController<TypeMap[any] | null>;
+    private onUnAuthenticatedCallbacks   : CallbackController<AuthStateSnapshot<TypeMap, any>>;
+    private onUserTypeChangedCallbacks   : CallbackController<{ old: keyof TypeMap | null, new: keyof TypeMap | null }>;
 
     constructor(auth: Auth, resolver?: UserModelResolver<TypeMap>) {
         this.auth = auth;
@@ -29,14 +32,22 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         this.claims = null;
         this.userType = null;
         this.uid = null;
-        this.onAuthStateChangedCallbacks = new CallbackController<AuthStateSnapshot<TypeMap, any>>();
-		this.onPreAuthLogoutHookCallbacks = new CallbackController();
+        this.onAuthStateChangedCallbacks  = new CallbackController<AuthStateSnapshot<TypeMap, any>>();
+        this.onPreAuthLogoutHookCallbacks = new CallbackController();
+        this.onUserModelChangedCallbacks  = new CallbackController<TypeMap[any] | null>();
+        this.onUnAuthenticatedCallbacks   = new CallbackController<AuthStateSnapshot<TypeMap, any>>();
+        this.onUserTypeChangedCallbacks    = new CallbackController<{ old: keyof TypeMap | null, new: keyof TypeMap | null }>();
     }
 
     get loggedIn() {
         return !!this.auth.currentUser;
     }
 
+    /**
+     * Returns a snapshot of the current auth state.
+     * @param eventName
+     * @returns
+     */
     getSnapshot(eventName:AuthEvent = "snapshot") {
         return {
             firebaseUser         : this.firebaseUser,
@@ -51,16 +62,26 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         };
     }
 
+    /**
+     * Replaces the current user model with the one provided.
+     * @param model
+     * @param typeName
+     */
     setUserModel<TypeName extends keyof TypeMap>(model: TypeMap[any], typeName: TypeName) {
+        const prevType = this.userType;
         this.userModel = model;
         this.userType = typeName;
         console.log(`User model updated to ${String(typeName)}`, model);
         this.onAuthStateChangedCallbacks.run( this.getSnapshot("model_loaded") );
+        this.onUserModelChangedCallbacks.run( this.userModel );
+        if(prevType !== this.userType) {
+            this.onUserTypeChangedCallbacks.run({ old: prevType, new: typeName });
+        }
     }
 
     /**
      * Updates the field values does NOT change the model type or trigger
-     * the model_updated event
+     * the model_updated event; but DOES trigger the user model changed event.
      * @param fields
      */
     updateUserModelFields(hash: Partial<TypeMap[any]>) {
@@ -71,18 +92,27 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
             if(hash[field] === undefined) continue;
             this.userModel[field] = hash[field];
         }
-        console.log("called to update user model", hash);
-        console.log("after updateUserModelFields", this.userModel);
+        this.onUserModelChangedCallbacks.run( this.userModel );
     }
 
+    /**
+     * Forces the user model to be resolved from a specific type.
+     * @param typeName
+     * @returns
+     */
     async setOverrideUserType<TypeName extends keyof TypeMap>(typeName?: TypeName) {
         if(!this.resolver) {
             throw new Error("No user model resolver defined");
         }
+        const prevType = this.userType;
+
         this.resolver.overrideType = typeName;
         await this.resolveUserModel();
         const snap = this.getSnapshot("model_loaded");
         this.onAuthStateChangedCallbacks.run( snap );
+        if(prevType !== this.userType) {
+            this.onUserTypeChangedCallbacks.run({ old: prevType, new: typeName });
+        }
         return snap;
     }
 
@@ -152,6 +182,9 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
             this.updatingAuth = false;
 
             // Run callbacks (if any)
+            if(eventName === "unauthenticated") {
+                this.onUnAuthenticatedCallbacks.run( this.getSnapshot(eventName) );
+            }
             this.onAuthStateChangedCallbacks.run( this.getSnapshot(eventName) );
         } catch(err: any) {
             if("code" in err) {
@@ -175,8 +208,32 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         console.warn(readable);
     }
 
+    /**
+     * Sets up a callback to be ran when the auth state changes.
+     * @param cb
+     * @param options
+     */
     onChange(cb: Callback<AuthStateSnapshot<TypeMap, any>>, options: {once: boolean} = { once: false }) {
         this.onAuthStateChangedCallbacks.add(cb, { once: options.once });
+    }
+
+    /**
+     * Sets up a callback to be ran when the user model changes.
+     * @param cb
+     * @param options
+     */
+    onUserModelChanged(cb: Callback<TypeMap[any] | null>, options: {once: boolean} = { once: false }) {
+        this.onUserModelChangedCallbacks.add(cb, { once: options.once });
+    }
+
+    onUnAuthenticated(cb: Callback<AuthStateSnapshot<TypeMap, any>>, options: {once: boolean} = { once: false }) {
+        /** Sets up a callback to be ran when the user is unauthenticated */
+        this.onUnAuthenticatedCallbacks.add(cb, { once: options.once });
+    }
+
+    onUserTypeChanged(cb: Callback<{ old: keyof TypeMap | null, new: keyof TypeMap | null }>, options: { once: boolean } = { once: false }) {
+        /** Sets up a callback to be ran when the user type changes */
+        this.onUserTypeChangedCallbacks.add(cb, { once: options.once });
     }
 
 	/** Sets up a callback to be ran before full unauthenticating, for cleaning up firestore things */
@@ -237,6 +294,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         if(options.cleanup) {
             // Clear any pending callbacks
             this.onAuthStateChangedCallbacks.cleanup();
+            this.onUserModelChangedCallbacks.cleanup();
         }
     }
 }
