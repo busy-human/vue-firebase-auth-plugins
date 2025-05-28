@@ -1,5 +1,5 @@
-import { MainAuth } from "./auth-state";
-import { UserModelMap } from "./types";
+import { MainAuth } from "./auth-state.js";
+import { UserModelMap } from "./types.js";
 import { DocumentReference, onSnapshot, Unsubscribe } from "firebase/firestore";
 
 export interface ApplyUserModelSnapshotsOptions {
