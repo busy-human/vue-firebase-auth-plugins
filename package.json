@@ -11,7 +11,7 @@
     "vue-router": "^4.5.1"
   },
   "devDependencies": {
-    "firebase": "^11.1.0",
+    "firebase": "^11.9.0",
     "typescript": "^5.7.2"
   },
   "exports": {
