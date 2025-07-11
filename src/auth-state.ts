@@ -204,8 +204,8 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
 
     logFirebaseError(error: FirebaseError) {
         const readable = this.convertAuthError(error.code);
+        console.warn(`Firebase Error: ${readable}`);
         console.error(error);
-        console.warn(readable);
     }
 
     /**
