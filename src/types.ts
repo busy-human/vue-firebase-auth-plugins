@@ -64,10 +64,12 @@ export interface DeferredRouting {
     next: NavigationGuardNext;
 }
 
-export type AuthRouteMeta<TypeMap extends UserModelMap, TypeName extends keyof TypeMap> = RouteMeta & {
+export interface AuthRouteMetaFields<TypeMap extends UserModelMap, TypeName extends keyof TypeMap> {
     requiresAuth?: boolean
     userTypes?: TypeName[]
 };
+
+export type AuthRouteMeta<TypeMap extends UserModelMap, TypeName extends keyof TypeMap> = RouteMeta & AuthRouteMetaFields<TypeMap, TypeName>;
 
 export const AUTH_DEFAULTS: AuthGuardOptions = {
     routes: {

@@ -58,12 +58,12 @@ export class AuthGuardTracker {
      */
     isPublicRoute(pathOrRoute: string | RouteLocationNormalizedGeneric) {
         const path = typeof pathOrRoute === "string"? pathOrRoute : pathOrRoute.path;
-        let isPublic: boolean = this.config.assumeIfUndefined === "public" ? true : false;
-        var resolvedRoute = this.router.resolve(path);
+        let isPublic: boolean = (this.config.assumeIfUndefined === "public");
+        const resolvedRoute = this.router.resolve(path);
         if (this.isLoginPage(path)) {
             isPublic = true;
         } else if (resolvedRoute) {
-            let requiresAuth = resolveMeta(resolvedRoute).requiresAuth;
+            const {requiresAuth} = resolveMeta(resolvedRoute);
             isPublic = requiresAuth === undefined ? isPublic : !requiresAuth;
         }
 
