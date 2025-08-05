@@ -281,7 +281,7 @@ export class AuthStateClass<TypeMap extends UserModelMap> {
         this.auth.updateCurrentUser(user);
     }
 
-    async logOut(options: AuthLogOutOptions = { cleanup: false }) {
+    async signOut(options: AuthLogOutOptions = { cleanup: false }) {
 		this.onPreAuthLogoutHookCallbacks.run(null);
         await this.auth.signOut();
         this.firebaseUser = null;
